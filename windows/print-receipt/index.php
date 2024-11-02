@@ -135,14 +135,6 @@ if($environment == 'windows')
 
 
                     // Dine In / Take Away
-                    if($data->customer->dine_type == "Dine In"){
-                        $printer -> setTextSize(3, 2);
-                        $printer -> text("#".$data->customer->numb_desk."\n");
-                        $printer -> setTextSize(2, 1);
-                        $printer -> text($data->customer->area."\n");
-                    } else {
-                        $printer -> text("#".$data->customer->dine_type."\n");
-                    }
                     $printer -> setTextSize(1, 1);
                     $printer->setEmphasis(true);//berguna mempertebal huruf
                     if($center == 'On')
@@ -159,7 +151,11 @@ if($environment == 'windows')
                     $printer->barcode($data->customer->sale_uid, Printer::BARCODE_CODE39);
                     $printer -> setJustification(Printer::JUSTIFY_LEFT);
                     $printer->text("UID      : ".substr($data->customer->sale_uid,0,$lebar_pixel - 11)."\n");
-                    $printer->text("Pelanggan: ".substr($data->customer->customer_name,0,$lebar_pixel - 11)."\n");
+                    if($data->customer->customer_is_default == 1){
+                        $printer->text("Pelanggan: ".substr($data->customer->customer_alias,0,$lebar_pixel - 11)."\n");
+                    } else {
+                        $printer->text("Pelanggan: ".substr($data->customer->customer_name,0,$lebar_pixel - 11)."\n");
+                    }
                     $printer->text("Tanggal  : ".substr($data->customer->date,0,$lebar_pixel - 11)."\n");
                     $printer->text("Kasir    : ".substr($data->customer->cashier,0,$lebar_pixel - 11)."\n");
                     // Header

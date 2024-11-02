@@ -35,21 +35,21 @@ if($environment == 'windows')
         
 
         /**JIKA ADA ORDERS**/
-        if($data->orders){
+        if($data->tickets){
             /**LOOPING ORDERS**/
             $pr_conn = array();
             $pr_usb = array();
             $pr_ip = array();
             $nump = 0;
             $qty_sum = array();
-            foreach($data->orders as $order){
-            $pr_conn[$nump] = $order->conn;
-            $pr_usb[$nump] = $order->usb;
-            $pr_ip[$nump] = $order->ip;
+            foreach($data->tickets as $ticket){
+            $pr_conn[$nump] = $ticket->conn;
+            $pr_usb[$nump] = $ticket->usb;
+            $pr_ip[$nump] = $ticket->ip;
                 /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
-                if(($order->paper == '58mm' && $order->type == '58') || ($order->paper == '80mm' && $order->type == '80'))
+                if(($ticket->paper == '58mm' && $ticket->type == '58') || ($ticket->paper == '80mm' && $ticket->type == '80'))
                 {
-                    if($order->paper == '58mm'){$lebar_pixel = 32;}else {$lebar_pixel = 48; }
+                    if($ticket->paper == '58mm'){$lebar_pixel = 32;}else {$lebar_pixel = 48; }
                     $center = 'On';
                     $right = 'On';
                 }
@@ -62,28 +62,28 @@ if($environment == 'windows')
 
                 /**KONEKSI PRINTER**/
                 if($nump == 0){
-                    if($order->conn == "USB"){  
-                        $connector = new WindowsPrintConnector($order->usb); 
-                    } else if($order->conn == "Ethernet"){  
-                        $connector = new NetworkPrintConnector($order->ip); 
+                    if($ticket->conn == "USB"){  
+                        $connector = new WindowsPrintConnector($ticket->usb); 
+                    } else if($ticket->conn == "Ethernet"){  
+                        $connector = new NetworkPrintConnector($ticket->ip); 
                     } else {
                         $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
                     }
                     $printer = new Printer($connector);
                 } else {
-                    if($order->conn == "USB"){  
+                    if($ticket->conn == "USB"){  
                         
                             $printer->close();
-                            $connector = new WindowsPrintConnector($order->usb);
+                            $connector = new WindowsPrintConnector($ticket->usb);
                             $printer = new Printer($connector);
                         
-                    } else if($order->conn == "Ethernet"){  
-                        if($pr_conn[$nump - 1] == "Ethernet" && $order->ip !=  $pr_ip[$nump - 1])
+                    } else if($ticket->conn == "Ethernet"){  
+                        if($pr_conn[$nump - 1] == "Ethernet" && $ticket->ip !=  $pr_ip[$nump - 1])
                         {
                             /** JIKA CONNECTOR SEBELUMNYA MENGGUNAKAN ETHERNET DAN IP YANG SAMA MAKA SETELAH DI CLOSE CONNECTOR TIDAK DAPAT
                              * DIBUKA LAGI (UNTUK KSWEB ANDROID) MAKA DIATASI DG SCRIPT INI **/
                             $printer->close();
-                            $connector = new NetworkPrintConnector($order->ip);
+                            $connector = new NetworkPrintConnector($ticket->ip);
                             $printer = new Printer($connector);
                         } 
                          
@@ -97,8 +97,20 @@ if($environment == 'windows')
 
                 //try {
                 /** JALANKAN PERINTAH PRINTER DISINI**/
-                if($order->contents){
-                    if($order->beep == "On")
+                if($ticket->contents){
+
+                    foreach($ticket->contents as $content){
+                       
+                    // Logo
+                    if($center == 'On')
+                    {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $logo = EscposImage::load($image_directory.'/default.png');
+                    $printer->bitImage($logo);
+
+                        
+                    if($ticket->beep == "On")
                     {
                         $printer -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
                     }    
@@ -115,7 +127,7 @@ if($environment == 'windows')
                         // $printer -> feed();
                         $printer->selectPrintMode(Printer::MODE_FONT_A);
                         $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                        $printer -> text("#".$order->category."\n");
+                        $printer -> text("#".$ticket->category."\n");
 
                         if($center == 'On')
                         {
@@ -147,40 +159,28 @@ if($environment == 'windows')
                     } else {
                         $printer->text(strtoupper(substr($data->customer->customer_name,0,24))."\n");
                     }
+                    
+                    
                     $printer -> setTextSize(1, 1);
                     #Judul
                     $printer -> text(str_repeat('-', $lebar_pixel)."\n");
                     $batas = $lebar_pixel;
         
-                    #Item
-                    $no = 0;
-                    $spasi_max_qty = 3;
-                    $spasi_between_qty_items = 1;
-                    $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                    $printer -> text("Qty".str_repeat(' ',$spasi_between_qty_items)."Item"."\n");
-                    $printer -> text(str_repeat('-', $lebar_pixel)."\n");
-                    $qty_sum[$nump] = array();
-                    foreach($order->contents as $content){
-                    $no++;
-                        $nama_produk = ucwords(strtolower($content->name));#12
-                        $qty_sum[$nump][] = $qty = $content->qty;#1
-                        $note = $content->note;#6
-                        
-                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                        $printer -> text(str_repeat(' ',$spasi_max_qty - strlen($qty)).$qty.str_repeat(' ',$spasi_between_qty_items).$nama_produk."\n");
-                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                        if($note != "" && $note != null){
-                            $printer -> text("     **".$note."\n");
-                        }
-                        //$printer -> text("\n");
-                    }
-                        
+                  
+                    
+            if($center == 'On')
+            {
+                $printer -> setJustification(Printer::JUSTIFY_CENTER);
+            }
+            $printer -> text(strtoupper($content->name)."\n");
+            $printer -> text("IDR ".uang($content->price)."\n");
+            $size = 5;
+            $printer -> qrCode($content->ticket_id, Printer::QR_ECLEVEL_L,$size);
+            $printer -> feed();
+            $printer -> text($content->ticket_id."\n");
                     
                 
-            $printer -> text(str_repeat('-', $lebar_pixel)."\n");
             $printer -> setJustification(Printer::JUSTIFY_LEFT);
-            $printer -> text(str_repeat(' ',$spasi_max_qty - strlen(array_sum($qty_sum[$nump]))).array_sum($qty_sum[$nump])." QTY(S) ".$no." ITEM(S)\n");
-            //$printer -> text($no." ITEM(S)\n");
             $printer -> text(str_repeat('=', $lebar_pixel)."\n");
         
             if($center == 'On')
@@ -191,8 +191,8 @@ if($environment == 'windows')
             
             $mada_footer = EscposImage::load($image_directory.'/'.$data->app_logo);
             $printer->bitImage($mada_footer);
-            if($order->space_footer > 0){$printer -> feed($order->space_footer); }
-            if($order->cutter == "On")
+            if($ticket->space_footer > 0){$printer -> feed($ticket->space_footer); }
+            if($ticket->cutter == "On")
             {
                 $printer->cut();#Memotong kertas
             }
@@ -213,6 +213,7 @@ if($environment == 'windows')
                 /** JALANKAN PERINTAH PRINTER DISINI**/
                 $nump++;
             }
+            }//END FOREACH TICKET
             $printer->close();
             /**LOOPING ORDERS**/
 
