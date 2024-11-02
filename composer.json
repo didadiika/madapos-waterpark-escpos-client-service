@@ -1,0 +1,9 @@
+{
+    "require": {
+        "mike42/escpos-php": "^4.0",
+        "lecodeurdudimanche/php-bluetooth": "^0.3.3"
+    },
+    "require-dev": {
+        "hoa/devtools": "^1.17"
+    }
+}
