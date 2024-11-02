@@ -386,5 +386,5 @@ if($environment == 'windows')
         }
         /**JIKA ADA BILLS**/
 
-    //echo "<script>window.close();</script>";
+    echo "<script>window.close();</script>";
 ?>

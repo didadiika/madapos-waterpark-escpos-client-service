@@ -24,10 +24,14 @@ $jumlah_print = $_POST['jumlah_print'];
 
 #----------------------------------IMAGE SETTING FIRST-------------------------------------#
 $logo_image = 'default.png';
-if($device == 'windows')
+$urlArray = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$segments = explode('/', $urlArray);
+$numSegments = count($segments); 
+$environment = $segments[$numSegments - 3];
+if($environment == 'windows')
 {
     $image_directory = $data->print_setting->windows_images_directory;
-} else if($device == 'android'){
+} else if($environment == 'android'){
     $image_directory = $data->print_setting->android_images_directory;
 }
 #----------------------------------IMAGE SETTING FIRST-------------------------------------#
@@ -131,14 +135,6 @@ if($device == 'windows')
 
 
                     // Dine In / Take Away
-                    if($data->customer->dine_type == "Dine In"){
-                        $printer -> setTextSize(3, 2);
-                        $printer -> text("#".$data->customer->numb_desk."\n");
-                        $printer -> setTextSize(2, 1);
-                        $printer -> text($data->customer->area."\n");
-                    } else {
-                        $printer -> text("#".$data->customer->dine_type."\n");
-                    }
                     $printer -> setTextSize(1, 1);
                     $printer->setEmphasis(true);//berguna mempertebal huruf
                     if($center == 'On')
@@ -155,7 +151,11 @@ if($device == 'windows')
                     $printer->barcode($data->customer->sale_uid, Printer::BARCODE_CODE39);
                     $printer -> setJustification(Printer::JUSTIFY_LEFT);
                     $printer->text("UID      : ".substr($data->customer->sale_uid,0,$lebar_pixel - 11)."\n");
-                    $printer->text("Pelanggan: ".substr($data->customer->customer_name,0,$lebar_pixel - 11)."\n");
+                    if($data->customer->customer_is_default == 1){
+                        $printer->text("Pelanggan: ".substr($data->customer->customer_alias,0,$lebar_pixel - 11)."\n");
+                    } else {
+                        $printer->text("Pelanggan: ".substr($data->customer->customer_name,0,$lebar_pixel - 11)."\n");
+                    }
                     $printer->text("Tanggal  : ".substr($data->customer->date,0,$lebar_pixel - 11)."\n");
                     $printer->text("Kasir    : ".substr($data->customer->cashier,0,$lebar_pixel - 11)."\n");
                     // Header

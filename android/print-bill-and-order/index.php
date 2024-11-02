@@ -21,10 +21,14 @@ $jumlah_print = $_POST['jumlah_print'];
 
 #----------------------------------IMAGE SETTING FIRST-------------------------------------#
 $logo_image = 'default.png';
-if($device == 'windows')
+$urlArray = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$segments = explode('/', $urlArray);
+$numSegments = count($segments); 
+$environment = $segments[$numSegments - 3];
+if($environment == 'windows')
 {
     $image_directory = $data->print_setting->windows_images_directory;
-} else if($device == 'android'){
+} else if($environment == 'android'){
     $image_directory = $data->print_setting->android_images_directory;
 }
 #----------------------------------IMAGE SETTING FIRST-------------------------------------#
@@ -98,10 +102,6 @@ if($device == 'windows')
                     /** JUMLAH PRINT **/
                     for($i= 0; $i < $jumlah_print; $i++ ){
                         /** LOOPING MAKANAN **/
-                        if($data->customer->order_printed > 0){
-                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                        $printer -> text("#Copied".$data->customer->order_printed."\n");
-                        }
                         $printer -> setJustification(Printer::JUSTIFY_LEFT);
                         $printer -> text("#".$order->category."\n");
 
@@ -117,15 +117,6 @@ if($device == 'windows')
                         $printer -> setJustification(Printer::JUSTIFY_CENTER);
                     }
                     $printer->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
-                    
-                    if($data->customer->dine_type == "Dine In"){
-                        $printer -> setTextSize(3, 2);
-                        $printer -> text("#".$data->customer->numb_desk."\n");
-                        $printer -> setTextSize(2, 1);
-                        $printer -> text($data->customer->area."\n");
-                    } else {
-                        $printer -> text("#".$data->customer->dine_type."\n");
-                    }
                     
                     $printer -> setTextSize(1, 1);
                     $printer->setEmphasis(true);//berguna mempertebal huruf
@@ -154,14 +145,10 @@ if($device == 'windows')
                         $nama_produk = $content->name;#12
                         $qty = $content->qty;#1
                         $note = $content->note;#6
-                        $addition = $content->addition;#6
                         
                         $printer -> setJustification(Printer::JUSTIFY_LEFT);
                         $printer -> text(str_repeat(' ',$spasi_max_qty - strlen($qty)).$qty.str_repeat(' ',$spasi_between_qty_items).$nama_produk."\n");
                         $printer -> setJustification(Printer::JUSTIFY_LEFT);
-                        if($addition == 'Yes'){
-                            $printer -> text("     *Tambahan\n");
-                        }
                         if($note != "" && $note != null){
                             $printer -> text("      **".$note."\n");
                         }
@@ -294,15 +281,6 @@ if($device == 'windows')
                         $printer -> setJustification(Printer::JUSTIFY_CENTER);
                     }
                     $printer->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
-                    
-                    if($data->customer->dine_type == "Dine In"){
-                        $printer -> setTextSize(3, 2);
-                        $printer -> text("#".$data->customer->numb_desk."\n");
-                        $printer -> setTextSize(2, 1);
-                        $printer -> text($data->customer->area."\n");
-                    } else {
-                        $printer -> text("#".$data->customer->dine_type."\n");
-                    }
                     
                     $printer -> setTextSize(1, 1);
                     $printer->setEmphasis(true);//berguna mempertebal huruf
