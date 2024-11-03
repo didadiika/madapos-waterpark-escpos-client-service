@@ -36,15 +36,20 @@ if($environment == 'windows')
 }
 #----------------------------------IMAGE SETTING FIRST-------------------------------------#
 
+$nump = 0;
+$pr_conn = array();
+$pr_usb = array();
+$pr_ip = array();
 
-        /**JIKA ADA BILLS**/
+        /***----------------------------------------BARIS RECEIPT-----------------------------------------------*/
         if($data->receipts){
-            $pr_conn = array();
-            $pr_usb = array();
-            $pr_ip = array();
-            $nump = 0;
+            
+            
             /**LOOPING ORDERS**/
             foreach($data->receipts as $receipt){
+            
+            if($receipt->waiting_for_printing == "true"){
+            
             $pr_conn[$nump] = $receipt->conn;
             $pr_usb[$nump] = $receipt->usb;
             $pr_ip[$nump] = $receipt->ip;
@@ -273,13 +278,384 @@ if($environment == 'windows')
                 
             }
             
-               
+        $nump++;       
                 /** JALANKAN PERINTAH PRINTER DISINI**/
+        }//end if waiting for printing
+        
             }
-            $printer->close();
+            
             /**LOOPING ORDERS**/
         }
-        /**JIKA ADA BILLS**/
+        /***----------------------------------------END BARIS RECEIPT-----------------------------------------------*/
 
-    echo "<script>window.close();</script>";
+
+
+        /***----------------------------------------BARIS ORDER-------------------------------------------------*/
+        if($data->orders){
+            $qty_sum = array();
+            foreach($data->orders as $order){
+            
+            if($order->waiting_for_printing == "true"){
+            
+            $pr_conn[$nump] = $order->conn;
+            $pr_usb[$nump] = $order->usb;
+            $pr_ip[$nump] = $order->ip;
+                /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
+                if(($order->paper == '58mm' && $order->type == '58') || ($order->paper == '80mm' && $order->type == '80'))
+                {
+                    if($order->paper == '58mm'){$lebar_pixel = 32;}else {$lebar_pixel = 48; }
+                    $center = 'On';
+                    $right = 'On';
+                }
+                else{
+                    $lebar_pixel = 32;
+                    $center = 'Off';
+                    $right = 'Off';
+                }
+                /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
+
+                /**KONEKSI PRINTER**/
+                if($nump == 0){
+                    if($order->conn == "USB"){  
+                        $connector = new WindowsPrintConnector($order->usb); 
+                    } else if($order->conn == "Ethernet"){  
+                        $connector = new NetworkPrintConnector($order->ip); 
+                    } else {
+                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
+                    }
+                    $printer = new Printer($connector);
+                } else {
+                    if($order->conn == "USB"){  
+                        
+                            $printer->close();
+                            $connector = new WindowsPrintConnector($order->usb);
+                            $printer = new Printer($connector);
+                        
+                    } else if($order->conn == "Ethernet"){  
+                        if($pr_conn[$nump - 1] == "Ethernet" && $order->ip !=  $pr_ip[$nump - 1])
+                        {
+                            /** JIKA CONNECTOR SEBELUMNYA MENGGUNAKAN ETHERNET DAN IP YANG SAMA MAKA SETELAH DI CLOSE CONNECTOR TIDAK DAPAT
+                             * DIBUKA LAGI (UNTUK KSWEB ANDROID) MAKA DIATASI DG SCRIPT INI **/
+                            $printer->close();
+                            $connector = new NetworkPrintConnector($order->ip);
+                            $printer = new Printer($connector);
+                        } 
+                         
+                    } else {
+                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
+                    }
+                }
+                
+                
+                /**KONEKSI PRINTER**/
+
+                //try {
+                /** JALANKAN PERINTAH PRINTER DISINI**/
+                if($order->contents){
+                    if($order->beep == "On")
+                    {
+                        $printer -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
+                    }    
+                    
+                    /** JUMLAH PRINT **/
+                    for($i= 0; $i < $jumlah_print; $i++ ){
+                        /** LOOPING MAKANAN **/
+                        // $logo = EscposImage::load($images_path."/".$data->store->photo);
+                        if($center == 'On')
+                        {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                        }
+                        // $printer->bitImage($logo);
+                        // $printer -> feed();
+                        $printer->selectPrintMode(Printer::MODE_FONT_A);
+                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                        $printer -> text("#".$order->category."\n");
+
+                        if($center == 'On')
+                        {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                        }
+                        
+                        $printer->text($data->store->header_bill."\n");
+                    #Toko
+                    if($center == 'On')
+                    {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $printer->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
+                    
+                    $printer -> setTextSize(1, 1);
+                    $printer->setEmphasis(true);//berguna mempertebal huruf
+                   
+                    if($center == 'On')
+                    {
+                    $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $printer -> text(str_repeat('=',$lebar_pixel)."\n");
+                    $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                    $printer->text("Tanggal : ".$data->customer->date."\n");
+                    $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    $printer -> setTextSize(2, 1);
+                    if($data->customer->customer_is_default == 1){
+                        $printer->text(strtoupper(substr($data->customer->customer_alias,0,24))."\n");
+                    } else {
+                        $printer->text(strtoupper(substr($data->customer->customer_name,0,24))."\n");
+                    }
+                    $printer -> setTextSize(1, 1);
+                    #Judul
+                    $printer -> text(str_repeat('-', $lebar_pixel)."\n");
+                    $batas = $lebar_pixel;
+        
+                    #Item
+                    $no = 0;
+                    $spasi_max_qty = 3;
+                    $spasi_between_qty_items = 1;
+                    $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                    $printer -> text("Qty".str_repeat(' ',$spasi_between_qty_items)."Item"."\n");
+                    $printer -> text(str_repeat('-', $lebar_pixel)."\n");
+                    $qty_sum[$nump] = array();
+                    foreach($order->contents as $content){
+                    $no++;
+                        $nama_produk = ucwords(strtolower($content->name));#12
+                        $qty_sum[$nump][] = $qty = $content->qty;#1
+                        $note = $content->note;#6
+                        
+                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                        $printer -> text(str_repeat(' ',$spasi_max_qty - strlen($qty)).$qty.str_repeat(' ',$spasi_between_qty_items).$nama_produk."\n");
+                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                        if($note != "" && $note != null){
+                            $printer -> text("     **".$note."\n");
+                        }
+                        //$printer -> text("\n");
+                    }
+                        
+                    
+                
+            $printer -> text(str_repeat('-', $lebar_pixel)."\n");
+            $printer -> setJustification(Printer::JUSTIFY_LEFT);
+            $printer -> text(str_repeat(' ',$spasi_max_qty - strlen(array_sum($qty_sum[$nump]))).array_sum($qty_sum[$nump])." QTY(S) ".$no." ITEM(S)\n");
+            //$printer -> text($no." ITEM(S)\n");
+            $printer -> text(str_repeat('=', $lebar_pixel)."\n");
+        
+            if($center == 'On')
+            {
+                $printer -> setJustification(Printer::JUSTIFY_CENTER);
+            }
+            // $printer -> text("TERIMA KASIH \n");
+            
+            $mada_footer = EscposImage::load($image_directory.'/'.$data->app_logo);
+            $printer->bitImage($mada_footer);
+            if($order->space_footer > 0){$printer -> feed($order->space_footer); }
+            if($order->cutter == "On")
+            {
+                $printer->cut();#Memotong kertas
+            }
+                
+                
+            
+            /** LOOPING MAKANAN **/
+            }
+            /** JUMLAH PRINT **/
+                
+            }
+            
+                // } catch (Exception $e) {
+                //     echo $e->getMessage();
+                // } finally {
+                //     $printer->close();
+                // }
+                /** JALANKAN PERINTAH PRINTER DISINI**/
+                $nump++;
+                }// end if waiting for printing
+            }
+            /**LOOPING ORDERS**/
+        }
+        /***----------------------------------------END BARIS ORDER-------------------------------------------------*/
+
+        /***----------------------------------------BARIS TIKET-------------------------------------------------*/
+        if($data->tickets){
+            /**LOOPING ORDERS**/
+            foreach($data->tickets as $ticket){
+ 
+            if($ticket->waiting_for_printing == "true"){
+ 
+            $pr_conn[$nump] = $ticket->conn;
+            $pr_usb[$nump] = $ticket->usb;
+            $pr_ip[$nump] = $ticket->ip;
+                /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
+                if(($ticket->paper == '58mm' && $ticket->type == '58') || ($ticket->paper == '80mm' && $ticket->type == '80'))
+                {
+                    if($ticket->paper == '58mm'){$lebar_pixel = 32;}else {$lebar_pixel = 48; }
+                    $center = 'On';
+                    $right = 'On';
+                }
+                else{
+                    $lebar_pixel = 32;
+                    $center = 'Off';
+                    $right = 'Off';
+                }
+                /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
+
+                /**KONEKSI PRINTER**/
+                if($nump == 0){
+                    if($ticket->conn == "USB"){  
+                        $connector = new WindowsPrintConnector($ticket->usb); 
+                    } else if($ticket->conn == "Ethernet"){  
+                        $connector = new NetworkPrintConnector($ticket->ip); 
+                    } else {
+                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
+                    }
+                    $printer = new Printer($connector);
+                } else {
+                    if($ticket->conn == "USB"){  
+                        
+                            $printer->close();
+                            $connector = new WindowsPrintConnector($ticket->usb);
+                            $printer = new Printer($connector);
+                        
+                    } else if($ticket->conn == "Ethernet"){  
+                        if($pr_conn[$nump - 1] == "Ethernet" && $ticket->ip !=  $pr_ip[$nump - 1])
+                        {
+                            /** JIKA CONNECTOR SEBELUMNYA MENGGUNAKAN ETHERNET DAN IP YANG SAMA MAKA SETELAH DI CLOSE CONNECTOR TIDAK DAPAT
+                             * DIBUKA LAGI (UNTUK KSWEB ANDROID) MAKA DIATASI DG SCRIPT INI **/
+                            $printer->close();
+                            $connector = new NetworkPrintConnector($ticket->ip);
+                            $printer = new Printer($connector);
+                        } 
+                         
+                    } else {
+                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
+                    }
+                }
+                
+                
+                /**KONEKSI PRINTER**/
+
+                //try {
+                /** JALANKAN PERINTAH PRINTER DISINI**/
+                if($ticket->contents){
+
+                    foreach($ticket->contents as $content){
+                       
+                    // Logo
+                    if($center == 'On')
+                    {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $logo = EscposImage::load($image_directory.'/default.png');
+                    $printer->bitImage($logo);
+
+                        
+                    if($ticket->beep == "On")
+                    {
+                        $printer -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
+                    }    
+                    
+                    /** JUMLAH PRINT **/
+                    for($i= 0; $i < $jumlah_print; $i++ ){
+                        /** LOOPING MAKANAN **/
+                        // $logo = EscposImage::load($images_path."/".$data->store->photo);
+                        if($center == 'On')
+                        {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                        }
+                        // $printer->bitImage($logo);
+                        // $printer -> feed();
+                        $printer->selectPrintMode(Printer::MODE_FONT_A);
+                        $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                        $printer -> text("#".$ticket->category."\n");
+
+                        if($center == 'On')
+                        {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                        }
+                        
+                        $printer->text($data->store->header_bill."\n");
+                    #Toko
+                    if($center == 'On')
+                    {
+                        $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $printer->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
+                    
+                    $printer -> setTextSize(1, 1);
+                    $printer->setEmphasis(true);//berguna mempertebal huruf
+                   
+                    if($center == 'On')
+                    {
+                    $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    }
+                    $printer -> text(str_repeat('=',$lebar_pixel)."\n");
+                    $printer -> setJustification(Printer::JUSTIFY_LEFT);
+                    $printer->text("Tanggal : ".$data->customer->date."\n");
+                    $printer -> setJustification(Printer::JUSTIFY_CENTER);
+                    $printer -> setTextSize(2, 1);
+                    if($data->customer->customer_is_default == 1){
+                        $printer->text(strtoupper(substr($data->customer->customer_alias,0,24))."\n");
+                    } else {
+                        $printer->text(strtoupper(substr($data->customer->customer_name,0,24))."\n");
+                    }
+                    
+                    
+                    $printer -> setTextSize(1, 1);
+                    #Judul
+                    $printer -> text(str_repeat('-', $lebar_pixel)."\n");
+                    $batas = $lebar_pixel;
+        
+                  
+                    
+            if($center == 'On')
+            {
+                $printer -> setJustification(Printer::JUSTIFY_CENTER);
+            }
+            $printer -> text(strtoupper($content->name)."\n");
+            $printer -> text("IDR ".uang($content->price)."\n");
+            $size = 5;
+            $printer -> qrCode($content->ticket_id, Printer::QR_ECLEVEL_L,$size);
+            $printer -> feed();
+            $printer -> text($content->ticket_id."\n");
+                    
+                
+            $printer -> setJustification(Printer::JUSTIFY_LEFT);
+            $printer -> text(str_repeat('=', $lebar_pixel)."\n");
+        
+            if($center == 'On')
+            {
+                $printer -> setJustification(Printer::JUSTIFY_CENTER);
+            }
+            // $printer -> text("TERIMA KASIH \n");
+            
+            $mada_footer = EscposImage::load($image_directory.'/'.$data->app_logo);
+            $printer->bitImage($mada_footer);
+            if($ticket->space_footer > 0){$printer -> feed($ticket->space_footer); }
+            if($ticket->cutter == "On")
+            {
+                $printer->cut();#Memotong kertas
+            }
+                
+                
+            
+            /** LOOPING MAKANAN **/
+            }
+            /** JUMLAH PRINT **/
+                
+            
+            }
+            
+                // } catch (Exception $e) {
+                //     echo $e->getMessage();
+                // } finally {
+                //     $printer->close();
+                // }
+                /** JALANKAN PERINTAH PRINTER DISINI**/
+                
+            }
+            $nump++;
+            }//end if waiting for printing
+            }//END FOREACH TICKET
+        }
+        /***----------------------------------------END BARIS TIKET-------------------------------------------------*/
+
+    $printer->close();
+    //echo "<script>window.close();</script>";
 ?>
