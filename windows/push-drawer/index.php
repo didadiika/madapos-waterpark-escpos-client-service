@@ -11,66 +11,40 @@ use Mike42\Escpos\PrintConnectors\CupsPrintConnector;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
 
-
-
+date_default_timezone_set("Asia/Jakarta");
+require __DIR__ . '/../../helper/Tanggal_helper.php';
+require __DIR__ . '/../../helper/Uang_helper.php';
+require __DIR__ . '/../../config.php';
 
 $json = $_POST['json'];
 $data = json_decode($json);
-        
-        /**JIKA ADA BILLS**/
-        if($data->receipts){
-            $pr_conn = array();
-            $pr_usb = array();
-            $pr_ip = array();
-            $nump = 0;
-            /**LOOPING ORDERS**/
-            foreach($data->receipts as $receipt){
-            $pr_conn[$nump] = $receipt->conn;
-            $pr_usb[$nump] = $receipt->usb;
-            $pr_ip[$nump] = $receipt->ip;
-                
-                /**INISIALIASASI SETTING KERTAS DAN ALIGMENT**/
 
-                /**KONEKSI PRINTER**/
-                
-                if($nump == 0){
-                    if($receipt->conn == "USB"){  
-                        $connector = new WindowsPrintConnector($receipt->usb); 
-                    } else if($receipt->conn == "Ethernet"){  
-                        $connector = new NetworkPrintConnector($receipt->ip); 
-                    } else {
-                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
-                    }
-                    $printer = new Printer($connector);
-                } else {
-                    if($receipt->conn == "USB"){  
-                        
-                            $printer->close();
-                            $connector = new WindowsPrintConnector($receipt->usb);
-                            $printer = new Printer($connector);
-                        
-                    } else if($receipt->conn == "Ethernet"){  
-                        if($pr_conn[$nump - 1] == "Ethernet" && $receipt->ip !=  $pr_ip[$nump - 1])
-                        {
-                            /** JIKA CONNECTOR SEBELUMNYA MENGGUNAKAN ETHERNET DAN IP YANG SAMA MAKA SETELAH DI CLOSE CONNECTOR TIDAK DAPAT
-                             * DIBUKA LAGI (UNTUK KSWEB ANDROID) MAKA DIATASI DG SCRIPT INI **/
-                            $printer->close();
-                            $connector = new NetworkPrintConnector($receipt->ip);
-                            $printer = new Printer($connector);
-                        } 
-                         
-                    } else {
-                        $connector = '';/**BLUETOOTH CONNECTOR JIKA SUDAH SUPPORT**/
-                    }
-                }
+if(count($data->printers) > 0){
 
-                $printer->pulse(0, 100, 100);
-               
-                /** JALANKAN PERINTAH PRINTER DISINI**/
-            }
-            $printer->close();
-            /**LOOPING ORDERS**/
-        }
-        /**JIKA ADA BILLS**/
-        echo "<script>window.close();</script>";
+    foreach($data->printers as $printer){
+    
+        $connector = ($printer->printer_conn == 'USB') ? new WindowsPrintConnector($printer->printer_address) : new NetworkPrintConnector($printer->printer_address) ;
+        if($connector){ #If Connector
+            $print = new Printer($connector);#Open Koneksi Printer
+            if(count($printer->jobs) > 0){
+
+                foreach($printer->jobs as $job){
+                    for($i = 0; $i < $job->autoprint_quantity; $i++){ #Foreach Autoprint Quantity
+                    #----------------------------------RECEIPT-------------------------------------#
+                    if($job->job == 'Receipt' && $data->waiting->receipt == true){
+                        
+                        if($printer->printer_cash_drawer == 1 || $printer->printer_cash_drawer == true){
+                            $print->pulse(0, 100, 100);
+                        }
+                    }
+                    #----------------------------------END RECEIPT-------------------------------------#
+                    }#EndForeach Autoprint Quantity
+                }#End Foreach Jobs
+
+            }#End Count Jobs
+            $print->close();#Close Koneksi Printer
+        }#End If Connector
+    }#End Foreach Printers
+
+}#End Count Printers
 ?>
