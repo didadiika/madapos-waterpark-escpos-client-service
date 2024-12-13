@@ -210,7 +210,7 @@ if(count($data->printers) > 0){
 
                                 $print -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
                                 
-                                for($i = 0; $i < $ticket->qty; $i++){# Quantitas Tiket
+                                foreach($ticket->barcodes as $barcode){# Quantitas Tiket
 
                                     $print->selectPrintMode(Printer::MODE_FONT_A);
                                     $print -> setJustification(Printer::JUSTIFY_LEFT);
@@ -253,9 +253,9 @@ if(count($data->printers) > 0){
                                     $print -> text(strtoupper($ticket->product_name)."\n");
                                     $print -> text("IDR ".uang($ticket->price_after_disc)."\n");
                                     $size = 5;
-                                    $print -> qrCode($ticket->id, Printer::QR_ECLEVEL_L,$size);
+                                    $print -> qrCode($barcode->id, Printer::QR_ECLEVEL_L,$size);
                                     $print -> feed();
-                                    $print -> text($ticket->id."\n");
+                                    $print -> text($barcode->id."\n");
                                             
                                         
                                     $print -> setJustification(Printer::JUSTIFY_LEFT);
