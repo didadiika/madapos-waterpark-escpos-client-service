@@ -87,6 +87,7 @@ if(count($data->printers) > 0){
                             $print -> setTextSize(2, 2);
                             $print->text(substr($data->store->header_bill,0,($max_width/2))."\n");
                             $print->selectPrintMode(Printer::MODE_FONT_A);
+                            $print->setEmphasis(false);
                         }
                         $print->text($data->store->address."\n");
                         $print->text($data->store->city."\n");
@@ -95,7 +96,7 @@ if(count($data->printers) > 0){
                         $print->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
                                                
                         $print -> setTextSize(1, 1);
-                        $print->setEmphasis(true);//berguna mempertebal huruf
+                        
                         if($center == 'On')
                         {
                         $print -> setJustification(Printer::JUSTIFY_CENTER);
@@ -104,7 +105,7 @@ if(count($data->printers) > 0){
                         $print -> setBarcodeHeight(40);
                         $print -> setBarcodeWidth(2);
                         $print->barcode($data->receipt->sale_uid, Printer::BARCODE_CODE39);
-                        $print->setEmphasis(true);//berguna mempertebal huruf
+                        
                         $print -> setJustification(Printer::JUSTIFY_LEFT);
                         $print->text("UID      : ".substr($data->receipt->sale_uid,0,$max_width - 11)."\n");
                         $customer_name = ($data->receipt->customer->is_default == true) ? $data->receipt->customer_alias : $data->receipt->customer->name;
@@ -200,6 +201,7 @@ if(count($data->printers) > 0){
                         if($data->print_setting->show_powered_by == true){
                             $print->setEmphasis(true);
                             $print->text("Powered by MadaPOS\n");
+                            $print->setEmphasis(false);
                         }
                         if($printer->printer_footer_space > 0){$print -> feed($printer->printer_footer_space); }
                         $print->cut();#Memotong kertas
@@ -239,8 +241,8 @@ if(count($data->printers) > 0){
                                     $print->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
                                     
                                     $print -> setTextSize(1, 1);
-                                    $print->setEmphasis(true);//berguna mempertebal huruf
-                                
+                                    
+                                    
                                     if($center == 'On')
                                     {
                                     $print -> setJustification(Printer::JUSTIFY_CENTER);
@@ -280,6 +282,7 @@ if(count($data->printers) > 0){
                                     if($data->print_setting->show_powered_by == true){
                                         $print->setEmphasis(true);
                                         $print->text("Powered by MadaPOS\n");
+                                        $print->setEmphasis(false);
                                     }
                                     if($printer->printer_footer_space > 0){$print -> feed($printer->printer_footer_space); }
                                     $print->cut();#Memotong kertas
@@ -316,7 +319,7 @@ if(count($data->printers) > 0){
                                     $print->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
                     
                                     $print -> setTextSize(1, 1);
-                                    $print->setEmphasis(true);
+                                    
                                     if($center == 'On')
                                     {
                                     $print -> setJustification(Printer::JUSTIFY_CENTER);
@@ -378,6 +381,7 @@ if(count($data->printers) > 0){
                                     if($data->print_setting->show_powered_by == true){
                                         $print->setEmphasis(true);
                                         $print->text("Powered by MadaPOS\n");
+                                        $print->setEmphasis(false);
                                     }
                                     if($printer->printer_footer_space > 0){$print -> feed($printer->printer_footer_space); }
                                     $print->cut();#Memotong kertas
