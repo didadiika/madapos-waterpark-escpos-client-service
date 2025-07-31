@@ -211,23 +211,109 @@ if(count($data->printers) > 0){
                     }
                     #----------------------------------END RECEIPT-------------------------------------#
 
-                    #----------------------------------TICKET-------------------------------------#
-                    if($job->job == 'Ticket' && $data->waiting->ticket == true){
+                    #----------------------------------TICKET PRINT PER TICKET-------------------------------------#
+                    // if($job->job == 'Ticket' && $data->waiting->ticket == true){
 
-                        foreach($printer->ticket_receipts as $ticket_receipt){# Foreach Ticket Receipts #}
+                    //     foreach($printer->ticket_receipts as $ticket_receipt){# Foreach Ticket Receipts #}
                             
                         
-                        if(count($ticket_receipt->tickets) > 0){# Jika Tiket Ada#
+                    //     if(count($ticket_receipt->tickets) > 0){# Jika Tiket Ada#
                             
-                            foreach($ticket_receipt->tickets as $ticket){# Membuka Tiket #
+                    //         foreach($ticket_receipt->tickets as $ticket){# Membuka Tiket #
+
+                    //             $print -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
+                                
+                    //             foreach($ticket->barcodes as $barcode){# Quantitas Tiket
+
+                    //                 $print->selectPrintMode(Printer::MODE_FONT_A);
+                    //                 $print -> setJustification(Printer::JUSTIFY_LEFT);
+                    //                 $print -> text("#".$ticket_receipt->category_name."\n");
+
+                    //                 if($center == 'On')
+                    //                 {
+                    //                 $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 }
+                    //                 $print->text($data->store->header_bill."\n");
+                    //                 if($center == 'On')
+                    //                 {
+                    //                     $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 }
+                    //                 $print->selectPrintMode(Printer::MODE_FONT_A | Printer::MODE_DOUBLE_HEIGHT | Printer::MODE_DOUBLE_WIDTH);
+                                    
+                    //                 $print -> setTextSize(1, 1);
+                                    
+                                    
+                    //                 if($center == 'On')
+                    //                 {
+                    //                 $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 }
+                    //                 $print -> text(str_repeat('=',$max_width)."\n");
+                    //                 $print -> setJustification(Printer::JUSTIFY_LEFT);
+                    //                 $print->text("Tanggal : ".$data->receipt->date."\n");
+                    //                 $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 $print -> setTextSize(2, 1);
+                    //                 $customer_name = ($data->receipt->customer->is_default == true) ? $data->receipt->customer_alias : $data->receipt->customer->name;
+                    //                 $print->text(substr($customer_name,0,24)."\n");
+                    //                 $print -> setTextSize(1, 1);
+                    //                 #Judul
+                    //                 $print -> text(str_repeat('-', $max_width)."\n");
+                    //                 $batas = $max_width;
+
+                    //                 if($center == 'On')
+                    //                 {
+                    //                     $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 }
+                    //                 $print -> text(strtoupper($ticket->product_name)."\n");
+                    //                 $print -> text("IDR ".uang($ticket->price_after_disc)."\n");
+                    //                 $size = 5;
+                    //                 $print -> qrCode($barcode->id, Printer::QR_ECLEVEL_L,$size);
+                    //                 $print -> feed();
+                    //                 $print -> text($barcode->id."\n");
+                                            
+                                        
+                    //                 $print -> setJustification(Printer::JUSTIFY_LEFT);
+                    //                 $print -> text(str_repeat('=', $max_width)."\n");
+                                
+                    //                 if($center == 'On')
+                    //                 {
+                    //                     $print -> setJustification(Printer::JUSTIFY_CENTER);
+                    //                 }
+                                    
+                    //                 if($data->print_setting->show_powered_by == true){
+                    //                     $print->setEmphasis(true);
+                    //                     $print->text("Powered by MadaPOS\n");
+                    //                     $print->setEmphasis(false);
+                    //                 }
+                    //                 if($printer->printer_footer_space > 0){$print -> feed($printer->printer_footer_space); }
+                    //                 $print->cut();#Memotong kertas
+                                    
+
+                    //             }#End Quantitas Tiket
+
+                    //         }# Membuka Tiket #
+                    //     }#End Jika Tiket Ada#
+                    //     }# End Foreach Ticket Receipts #}
+
+                    // }
+                    #----------------------------------END TICKET PRINT PER TICKET-------------------------------------#
+
+                    #----------------------------------TICKET PRINT PER CATEGORY TICKET-------------------------------------#
+                    if($job->job == 'Ticket' && $data->waiting->ticket == true){
+
+                        foreach($printer->ticket_per_category as $ticket_category){# Foreach Ticket Receipts #}
+                            
+                        
+                        if(count($ticket_category->tickets) > 0){# Jika Tiket Ada#
+                            
+                            foreach($ticket_category->tickets as $ticket){# Membuka Tiket #
 
                                 $print -> getPrintConnector() -> write(PRINTER::ESC . "B" . chr(4) . chr(1));
                                 
-                                foreach($ticket->barcodes as $barcode){# Quantitas Tiket
+                                
 
                                     $print->selectPrintMode(Printer::MODE_FONT_A);
                                     $print -> setJustification(Printer::JUSTIFY_LEFT);
-                                    $print -> text("#".$ticket_receipt->category_name."\n");
+                                    $print -> text("#".$ticket_category->category_name."\n");
 
                                     if($center == 'On')
                                     {
@@ -263,12 +349,15 @@ if(count($data->printers) > 0){
                                     {
                                         $print -> setJustification(Printer::JUSTIFY_CENTER);
                                     }
+                                    $print -> setTextSize(2, 1);
+                                    $print -> text(strtoupper($ticket->qty)."x\n");
+                                    $print -> setTextSize(1, 1);
                                     $print -> text(strtoupper($ticket->product_name)."\n");
                                     $print -> text("IDR ".uang($ticket->price_after_disc)."\n");
                                     $size = 5;
-                                    $print -> qrCode($barcode->id, Printer::QR_ECLEVEL_L,$size);
+                                    $print -> qrCode($ticket->id, Printer::QR_ECLEVEL_L,$size);
                                     $print -> feed();
-                                    $print -> text($barcode->id."\n");
+                                    $print -> text($ticket->id."\n");
                                             
                                         
                                     $print -> setJustification(Printer::JUSTIFY_LEFT);
@@ -288,14 +377,14 @@ if(count($data->printers) > 0){
                                     $print->cut();#Memotong kertas
                                     
 
-                                }#End Quantitas Tiket
+                                
 
                             }# Membuka Tiket #
                         }#End Jika Tiket Ada#
                         }# End Foreach Ticket Receipts #}
 
                     }
-                    #----------------------------------END TICKET-------------------------------------#
+                    #----------------------------------END TICKET PRINT PER CATEGORY TICKET-------------------------------------#
 
                     #----------------------------------ORDER-------------------------------------#
                     else if($job->job == 'Order' && $data->waiting->order == true){
